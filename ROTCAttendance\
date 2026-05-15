@@ -1,0 +1,552 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+#include <ctype.h>
+
+// ---------------- DATA STRUCTURES ----------------
+
+typedef struct Cadet {
+    char id[7];
+    char fName[50], mName[50], lName[50], rank[30];
+
+    char battalion[50];
+    int platoon;
+    char company[20];
+
+    int presents, absents;
+    char lastLog[50];
+
+    struct Cadet* next;
+} Cadet;
+
+typedef struct Dropped {
+    char id[7];
+    char fullName[150];
+    struct Dropped* next;
+} Dropped;
+
+Cadet* head = NULL;
+Dropped* trashStack = NULL;
+
+// ---------------- VALIDATION ----------------
+
+void getValidID(char* id) {
+
+    char input[100];
+    int i;
+
+    while(1) {
+
+        printf("Enter Cadet ID (6 digits): ");
+        scanf(" %[^\n]", input);
+
+        int isNum = 1;
+        int len = strlen(input);
+
+        for(i = 0; i < len; i++) {
+            if(!isdigit(input[i])) {
+                isNum = 0;
+            }
+        }
+
+        if(isNum && len == 6) {
+            strcpy(id, input);
+            break;
+        }
+
+        printf("[INVALID] 6 digits only.\n");
+    }
+}
+
+// ---------------- BATTALION ----------------
+
+void getValidBattalion(char* battalion) {
+
+    int choice;
+
+    while(1) {
+
+        printf("\n================ BATTALIONS ================\n");
+        printf("1. TAGAPAGTANGGOL\n");
+        printf("2. TAGAPAGLIGTAS\n");
+        printf("3. TAGAPAGLINGKOD\n");
+        printf("4. TAGAPAGBANTAY\n");
+        printf("5. TAGAPAGKALINGA\n");
+        printf("6. TAGAPAGTUPAD\n");
+        printf("===========================================\n");
+
+        printf("Select Battalion: ");
+        scanf("%d", &choice);
+
+        switch(choice) {
+            case 1: strcpy(battalion, "TAGAPAGTANGGOL"); return;
+            case 2: strcpy(battalion, "TAGAPAGLIGTAS"); return;
+            case 3: strcpy(battalion, "TAGAPAGLINGKOD"); return;
+            case 4: strcpy(battalion, "TAGAPAGBANTAY"); return;
+            case 5: strcpy(battalion, "TAGAPAGKALINGA"); return;
+            case 6: strcpy(battalion, "TAGAPAGTUPAD"); return;
+            default: printf("[INVALID]\n");
+        }
+    }
+}
+
+// ---------------- PLATOON ----------------
+
+int getPlatoon() {
+
+    int p;
+
+    do {
+        printf("Platoon (1-4): ");
+        scanf("%d", &p);
+
+        if(p < 1 || p > 4)
+            printf("[INVALID] 1-4 only.\n");
+
+    } while(p < 1 || p > 4);
+
+    return p;
+}
+
+// ---------------- COMPANY ----------------
+
+void getCompany(char* company) {
+
+    int c;
+
+    while(1) {
+
+        printf("\nCompany:\n");
+        printf("[1] ALPHA\n");
+        printf("[2] BRAVO\n");
+        printf("Select: ");
+        scanf("%d", &c);
+
+        if(c == 1) {
+            strcpy(company, "ALPHA");
+            return;
+        }
+        else if(c == 2) {
+            strcpy(company, "BRAVO");
+            return;
+        }
+        else {
+            printf("[INVALID]\n");
+        }
+    }
+}
+
+// ---------------- SORT ----------------
+
+void sortRoster() {
+
+    Cadet *i, *j;
+
+    if(!head || !head->next) return;
+
+    for(i = head; i != NULL; i = i->next) {
+        for(j = i->next; j != NULL; j = j->next) {
+
+            if(strcmp(i->lName, j->lName) > 0) {
+
+                Cadet temp = *i;
+                *i = *j;
+                *j = temp;
+
+                Cadet* t = i->next;
+                i->next = j->next;
+                j->next = t;
+            }
+        }
+    }
+}
+
+// ---------------- VIEW BATTALION ----------------
+
+void viewBattalion(char battalion[]) {
+
+    Cadet* temp;
+    int foundAlpha = 0, foundBravo = 0;
+
+    printf("\n==================== %s - ALPHA COMPANY ====================\n", battalion);
+    printf("====================================================================================\n");
+    printf("| ID     | NAME                                   | RANK      | PLT | COMPANY |\n");
+    printf("====================================================================================\n");
+
+    temp = head;
+    while(temp) {
+
+        if(strcmp(temp->battalion, battalion) == 0 &&
+           strcmp(temp->company, "ALPHA") == 0) {
+
+            char fullName[120];
+            sprintf(fullName, "%s, %s %s",
+                    temp->lName,
+                    temp->fName,
+                    temp->mName);
+
+            printf("| %-6s | %-38s | %-9s | %-3d | %-7s |\n",
+                   temp->id,
+                   fullName,
+                   temp->rank,
+                   temp->platoon,
+                   temp->company);
+
+            foundAlpha = 1;
+        }
+
+        temp = temp->next;
+    }
+
+    if(!foundAlpha)
+        printf("| NO ALPHA CADET FOUND                                                           |\n");
+
+    printf("====================================================================================\n");
+
+    printf("\n==================== %s - BRAVO COMPANY ====================\n", battalion);
+    printf("====================================================================================\n");
+    printf("| ID     | NAME                                   | RANK      | PLT | COMPANY |\n");
+    printf("====================================================================================\n");
+
+    temp = head;
+    while(temp) {
+
+        if(strcmp(temp->battalion, battalion) == 0 &&
+           strcmp(temp->company, "BRAVO") == 0) {
+
+            char fullName[120];
+            sprintf(fullName, "%s, %s %s",
+                    temp->lName,
+                    temp->fName,
+                    temp->mName);
+
+            printf("| %-6s | %-38s | %-9s | %-3d | %-7s |\n",
+                   temp->id,
+                   fullName,
+                   temp->rank,
+                   temp->platoon,
+                   temp->company);
+
+            foundBravo = 1;
+        }
+
+        temp = temp->next;
+    }
+
+    if(!foundBravo)
+        printf("| NO BRAVO CADET FOUND                                                           |\n");
+
+    printf("====================================================================================\n");
+}
+
+// ---------------- REGISTER ----------------
+
+void registerCadet() {
+
+    Cadet* n = (Cadet*)malloc(sizeof(Cadet));
+
+    getValidID(n->id);
+
+    printf("First Name: ");
+    scanf(" %[^\n]", n->fName);
+
+    printf("Middle Name: ");
+    scanf(" %[^\n]", n->mName);
+
+    printf("Last Name: ");
+    scanf(" %[^\n]", n->lName);
+
+    strcpy(n->rank, "CDT_PVT");
+
+    getValidBattalion(n->battalion);
+    n->platoon = getPlatoon();
+    getCompany(n->company);
+
+    n->presents = 0;
+    n->absents = 0;
+    strcpy(n->lastLog, "No Record");
+
+    n->next = head;
+    head = n;
+
+    sortRoster();
+
+    printf("\n[SUCCESS] Cadet Registered Successfully.\n");
+}
+
+// ---------------- EDIT CADET ----------------
+
+void editCadet() {
+
+    char id[7];
+    Cadet* temp = head;
+    int found = 0;
+    int choice;
+
+    printf("\n========== EDIT CADET ==========\n");
+    getValidID(id);
+
+    while(temp) {
+        if(strcmp(temp->id, id) == 0) {
+            found = 1;
+            break;
+        }
+        temp = temp->next;
+    }
+
+    if(!found) {
+        printf("[NOT FOUND] Cadet does not exist.\n");
+        return;
+    }
+
+    while(1) {
+        printf("\nEditing Cadet: %s %s %s\n",
+               temp->fName,temp->mName,temp->lName);
+
+        printf("\nWhat do you want to edit?\n");
+        printf("[1] First Name\n[2] Middle Name\n[3] Last Name\n");
+        printf("[4] Rank\n[5] Battalion\n[6] Platoon\n[7] Company\n[0] Exit Edit\n");
+
+        printf("Choice: ");
+        scanf("%d", &choice);
+
+        switch(choice) {
+            case 1: printf("New First Name: "); scanf(" %[^\n]", temp->fName); break;
+            case 2: printf("New Middle Name: "); scanf(" %[^\n]", temp->mName); break;
+            case 3: printf("New Last Name: "); scanf(" %[^\n]", temp->lName); sortRoster(); break;
+            case 4: printf("New Rank: "); scanf(" %[^\n]", temp->rank); break;
+            case 5: getValidBattalion(temp->battalion); break;
+            case 6: temp->platoon = getPlatoon(); break;
+            case 7: getCompany(temp->company); break;
+            case 0: return;
+            default: printf("[INVALID]\n");
+        }
+
+        printf("[UPDATED SUCCESSFULLY]\n");
+    }
+}
+
+// ---------------- DELETE CADET ----------------
+
+void deleteCadet() {
+
+    char id[7];
+    Cadet *temp = head, *prev = NULL;
+
+    printf("\n========== DELETE CADET ==========\n");
+    getValidID(id);
+
+    while(temp != NULL && strcmp(temp->id, id) != 0) {
+        prev = temp;
+        temp = temp->next;
+    }
+
+    if(temp == NULL) {
+        printf("[NOT FOUND] Cadet does not exist.\n");
+        return;
+    }
+
+    Dropped* dropped = (Dropped*)malloc(sizeof(Dropped));
+
+    strcpy(dropped->id, temp->id);
+    sprintf(dropped->fullName, "%s, %s %s",
+            temp->lName,temp->fName,temp->mName);
+
+    dropped->next = trashStack;
+    trashStack = dropped;
+
+    if(prev == NULL) head = temp->next;
+    else prev->next = temp->next;
+
+    free(temp);
+
+    printf("[SUCCESS] Cadet deleted successfully.\n");
+}
+
+// ---------------- STATISTICS ----------------
+
+void stats() {
+
+    Cadet* temp = head;
+    int total = 0;
+    int alpha = 0, bravo = 0;
+
+    while(temp) {
+        total++;
+
+        if(strcmp(temp->company, "ALPHA") == 0)
+            alpha++;
+        else if(strcmp(temp->company, "BRAVO") == 0)
+            bravo++;
+
+        temp = temp->next;
+    }
+
+    printf("\n========== STATISTICS ==========\n");
+    printf("Total Registered Cadets : %d\n", total);
+    printf("Total ALPHA Company     : %d\n", alpha);
+    printf("Total BRAVO Company     : %d\n", bravo);
+}
+
+// ---------------- ATTENDANCE (FIXED ONLY) ----------------
+
+void attendance() {
+
+    char id[7];
+    Cadet *temp = head, *prev = NULL;
+    int found = 0;
+    int choice;
+
+    printf("\n========== ATTENDANCE ==========\n");
+    getValidID(id);
+
+    while(temp) {
+        if(strcmp(temp->id, id) == 0) {
+            found = 1;
+            break;
+        }
+        prev = temp;
+        temp = temp->next;
+    }
+
+    if(!found) {
+        printf("[NOT FOUND] Cadet does not exist.\n");
+        return;
+    }
+
+    printf("\nCadet: %s %s %s\n", temp->fName, temp->mName, temp->lName);
+
+    printf("\nMark Attendance:\n");
+    printf("[1] Present\n[2] Absent\n");
+    printf("Choice: ");
+    scanf("%d", &choice);
+
+    if(choice == 1) {
+        temp->presents++;
+        strcpy(temp->lastLog, "PRESENT");
+        printf("[UPDATED] Marked as PRESENT.\n");
+    }
+    else if(choice == 2) {
+        temp->absents++;
+        strcpy(temp->lastLog, "ABSENT");
+
+        printf("[UPDATED] Marked as ABSENT. Total: %d\n", temp->absents);
+
+        if(temp->absents >= 3) {
+
+            printf("\n[AUTO DROP] 3 ABSENTS REACHED\n");
+
+            Dropped* d = (Dropped*)malloc(sizeof(Dropped));
+            strcpy(d->id, temp->id);
+            sprintf(d->fullName, "%s, %s %s",
+                    temp->lName, temp->fName, temp->mName);
+
+            d->next = trashStack;
+            trashStack = d;
+
+            if(prev == NULL)
+                head = temp->next;
+            else
+                prev->next = temp->next;
+
+            free(temp);
+        }
+    }
+}
+
+// ---------------- REPORT ----------------
+
+void report() {
+
+    Cadet* temp;
+    int foundAlpha = 0, foundBravo = 0;
+
+    printf("\n==================== REPORT - ALPHA COMPANY ====================\n");
+    printf("====================================================================================\n");
+    printf("| ID     | NAME                           | BATTALION | P | A | LAST |\n");
+    printf("====================================================================================\n");
+
+    temp = head;
+    while(temp) {
+
+        if(strcmp(temp->company, "ALPHA") == 0) {
+
+            char fullName[120];
+            sprintf(fullName, "%s, %s %s",
+                    temp->lName,temp->fName,temp->mName);
+
+            printf("| %-6s | %-30s | %-10s | %-1d | %-1d | %-6s |\n",
+                   temp->id, fullName, temp->battalion,
+                   temp->presents, temp->absents, temp->lastLog);
+
+            foundAlpha = 1;
+        }
+
+        temp = temp->next;
+    }
+
+    printf("====================================================================================\n");
+}
+
+// ---------------- TRASH ----------------
+
+void viewTrash() {
+
+    Dropped* temp = trashStack;
+
+    printf("\n========== DROPPED CADETS ==========\n");
+
+    if(!temp) {
+        printf("NO DROPPED CADETS\n");
+        return;
+    }
+
+    while(temp) {
+        printf("%s - %s\n", temp->id, temp->fullName);
+        temp = temp->next;
+    }
+}
+
+// ---------------- MAIN ----------------
+
+int main() {
+
+    int choice;
+
+    while(1) {
+
+        printf("\n======================================\n");
+        printf("     CBSUA ROTC MANAGEMENT SYSTEM\n");
+        printf("======================================\n");
+
+        printf(" [1] Registration      [5] Statistics\n");
+        printf(" [2] Edit Cadet        [6] Attendance\n");
+        printf(" [3] Delete Cadet      [7] View Report\n");
+        printf(" [4] View Battalion    [8] Drop List\n");
+        printf(" [0] Exit\n");
+
+        printf("--------------------------------------\n");
+        printf("Choice: ");
+        scanf("%d", &choice);
+
+        switch(choice) {
+            case 1: registerCadet(); break;
+            case 2: editCadet(); break;
+            case 3: deleteCadet(); break;
+            case 4: {
+                char battalion[50];
+                getValidBattalion(battalion);
+                viewBattalion(battalion);
+                break;
+            }
+            case 5: stats(); break;
+            case 6: attendance(); break;
+            case 7: report(); break;
+            case 8: viewTrash(); break;
+            case 0: exit(0);
+            default: printf("[INVALID]\n");
+        }
+    }
+    return 0;
+}
